@@ -5,8 +5,8 @@ const path = require('node:path');
 const root = process.cwd();
 const node = process.execPath;
 
-const SPA_HEAP_MB = process.env.LOBE_VERCEL_SPA_HEAP_MB || '6144';
-const NEXT_HEAP_MB = process.env.LOBE_VERCEL_NEXT_HEAP_MB || '6144';
+const SPA_HEAP_MB = process.env.LOBE_VERCEL_SPA_HEAP_MB || '8192';
+const NEXT_HEAP_MB = process.env.LOBE_VERCEL_NEXT_HEAP_MB || '7168';
 
 const withHeapLimit = (env, heapMb) => {
   const current = (env.NODE_OPTIONS || '')
