@@ -59,19 +59,19 @@ jobs:
           exit "$missing"
 
       - name: Pull Vercel project settings
-        run: npx vercel@${{ env.VERCEL_CLI_VERSION }} pull --yes --environment=production --token=${{ env.VERCEL_TOKEN }}
+        run: bunx vercel@${{ env.VERCEL_CLI_VERSION }} pull --yes --environment=production --token=${{ env.VERCEL_TOKEN }}
 
       - name: Build Vercel output
         env:
           LOBE_VERCEL_SPA_HEAP_MB: ${{ env.LOBE_VERCEL_SPA_HEAP_MB }}
           LOBE_VERCEL_NEXT_HEAP_MB: ${{ env.LOBE_VERCEL_NEXT_HEAP_MB }}
-        run: npx vercel@${{ env.VERCEL_CLI_VERSION }} build --prod --token=${{ env.VERCEL_TOKEN }}
+        run: bunx vercel@${{ env.VERCEL_CLI_VERSION }} build --prod --token=${{ env.VERCEL_TOKEN }}
 
       - name: Deploy prebuilt output
         id: deploy
         shell: bash
         run: |
-          deployment_url="$(npx vercel@${{ env.VERCEL_CLI_VERSION }} deploy --prebuilt --archive=tgz --prod --token=${{ env.VERCEL_TOKEN }})"
+          deployment_url="$(bunx vercel@${{ env.VERCEL_CLI_VERSION }} deploy --prebuilt --archive=tgz --prod --token=${{ env.VERCEL_TOKEN }})"
           echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
 
       - name: Write deployment summary
