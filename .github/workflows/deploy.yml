@@ -1,0 +1,84 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - canary
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24.11.1
+  VERCEL_CLI_VERSION: 50.37.3
+  LOBE_VERCEL_SPA_HEAP_MB: 6144
+  LOBE_VERCEL_NEXT_HEAP_MB: 6144
+
+jobs:
+  deploy:
+    name: Build and Deploy Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Validate Vercel secrets
+        shell: bash
+        run: |
+          missing=0
+
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not configured."
+              missing=1
+            fi
+          done
+
+          exit "$missing"
+
+      - name: Pull Vercel project settings
+        run: npx vercel@${{ env.VERCEL_CLI_VERSION }} pull --yes --environment=production --token=${{ env.VERCEL_TOKEN }}
+
+      - name: Build Vercel output
+        env:
+          LOBE_VERCEL_SPA_HEAP_MB: ${{ env.LOBE_VERCEL_SPA_HEAP_MB }}
+          LOBE_VERCEL_NEXT_HEAP_MB: ${{ env.LOBE_VERCEL_NEXT_HEAP_MB }}
+        run: npx vercel@${{ env.VERCEL_CLI_VERSION }} build --prod --token=${{ env.VERCEL_TOKEN }}
+
+      - name: Deploy prebuilt output
+        id: deploy
+        shell: bash
+        run: |
+          deployment_url="$(npx vercel@${{ env.VERCEL_CLI_VERSION }} deploy --prebuilt --archive=tgz --prod --token=${{ env.VERCEL_TOKEN }})"
+          echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Write deployment summary
+        shell: bash
+        run: |
+          echo "## Production deployment complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch: \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- URL: ${{ steps.deploy.outputs.deployment_url }}" >> "$GITHUB_STEP_SUMMARY"

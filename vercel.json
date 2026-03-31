@@ -1,5 +1,5 @@
 {
-  "buildCommand": "bun run build:vercel",
+  "buildCommand": "node ./scripts/vercelBuild.cjs",
   "headers": [
     {
       "source": "/_spa/(.*)",
